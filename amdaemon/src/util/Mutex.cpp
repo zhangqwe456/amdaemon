@@ -3,6 +3,14 @@
 #include <windows.h>
 
 namespace {
+
+    namespace mutexDetail {
+        bool lockMutexImpl(void *handle, unsigned int timeoutMilliseconds) {
+            DWORD result = WaitForSingleObject(handle, timeoutMilliseconds);
+            return result == WAIT_OBJECT_0 || result == WAIT_ABANDONED;
+        }
+    }
+
 	void* getInvalidMutexHandleValue() {
 		return nullptr;
 	}
@@ -14,29 +22,86 @@ namespace {
 	HANDLE createMutex(const wchar_t *name) {
 		return CreateMutexW(nullptr, FALSE, name);
 	}
+
+    bool tryLockMutex(void *handle) {
+        return mutexDetail::lockMutexImpl(handle, 0);
+    }
+
+    bool lockMutex(void *handle) {
+        return mutexDetail::lockMutexImpl(handle, INFINITE);
+    }
+
+    bool unlockMutex(void *handle) {
+        return ReleaseMutex(handle);
+    }
+
 }
 
 namespace amdaemon::util {
 	Mutex::Impl::Impl(const wchar_t *name) {
-		this->_handle = getInvalidMutexHandleValue();
-		this->_lockCount = 0;
+		_handle = getInvalidMutexHandleValue();
+		_lockCount = 0;
 		if (name) {
-			this->_handle = openMutex(name);
+			_handle = openMutex(name);
 		}
 		if (!valid()) {
-			this->_handle = createMutex(name);
+			_handle = createMutex(name);
 		}
 	}
 
 	bool Mutex::Impl::valid() {
-		return this->_handle != getInvalidMutexHandleValue();
+		return _handle != getInvalidMutexHandleValue();
 	}
 
-	Mutex::Mutex(const wchar_t *name) {
-		this->_impl = std::make_unique<Impl>(Impl(name));
+    bool Mutex::Impl::try_lock() {
+        return doLock([](void *handle) {
+            return tryLockMutex(handle);
+        });
+    }
+
+    bool Mutex::Impl::lock() {
+        return doLock([](void *handle) {
+            return lockMutex(handle);
+        });
+    }
+
+    bool Mutex::Impl::unlock() {
+        if (!valid() || _lockCount == 0 || !unlockMutex(_handle)) {
+            return false;
+        }
+        _lockCount--;
+        return true;
+    }
+
+    template<typename F>
+    bool Mutex::Impl::doLock(F locker) {
+        if (!valid()) {
+            return false;
+        }
+        if (!locker(_handle)) {
+            return false;
+        }
+        _lockCount++;
+        return true;
+    }
+
+    Mutex::Mutex(const wchar_t *name) {
+		_impl = std::make_unique<Impl>(name);
 	}
 
-	Mutex::Mutex(const Mutex &src) {
-		this->_impl = std::move(src._impl);
+	Mutex::Mutex(const Mutex &&src) noexcept {
+		_impl = src._impl;
 	}
+
+    bool Mutex::try_lock() {
+        return _impl && _impl->try_lock();
+    }
+
+    bool Mutex::lock() {
+        return _impl && _impl->lock();
+    }
+
+    bool Mutex::unlock() {
+        return _impl && _impl->unlock();
+    }
 }

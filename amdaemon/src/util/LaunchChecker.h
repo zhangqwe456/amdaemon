@@ -12,6 +12,6 @@ namespace amdaemon::util {
 
 	public:
 
-		LaunchChecker(const std::wstring* name);
+		explicit LaunchChecker(const std::wstring* name);
 	};
 }
