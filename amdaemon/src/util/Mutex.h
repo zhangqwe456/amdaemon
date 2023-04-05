@@ -11,14 +11,13 @@ namespace amdaemon::util {
 
         public:
             explicit Impl(const wchar_t* name);
-            bool valid();
-            bool try_lock();
 
             template<typename F>
             bool doLock(F locker);
 
+            bool valid();
+            bool try_lock();
             bool lock();
-
             bool unlock();
         };
 
@@ -26,12 +25,10 @@ namespace amdaemon::util {
 	public:
 
 		explicit Mutex(const wchar_t* name);
-		Mutex(const Mutex&&) noexcept;
+		Mutex(Mutex&&) noexcept;
 
         bool try_lock();
-
         bool lock();
-
         bool unlock();
     };
 

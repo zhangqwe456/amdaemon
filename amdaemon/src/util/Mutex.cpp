@@ -89,8 +89,8 @@ namespace amdaemon::util {
 		_impl = std::make_unique<Impl>(name);
 	}
 
-	Mutex::Mutex(const Mutex &&src) noexcept {
-		_impl = src._impl;
+	Mutex::Mutex(Mutex &&src) noexcept {
+        _impl = std::move(src._impl);
 	}
 
     bool Mutex::try_lock() {
