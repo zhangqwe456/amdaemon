@@ -1,6 +1,7 @@
 #include "Mutex.h"
 
 #include <windows.h>
+#include <mutex>
 
 namespace {
 
@@ -103,5 +104,9 @@ namespace amdaemon::util {
 
     bool Mutex::unlock() {
         return _impl && _impl->unlock();
+    }
+
+    Mutex::operator int() {
+        return 0;
     }
 }

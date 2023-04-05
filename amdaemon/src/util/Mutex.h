@@ -30,6 +30,8 @@ namespace amdaemon::util {
         bool try_lock();
         bool lock();
         bool unlock();
+
+        explicit operator int();
     };
 
 }

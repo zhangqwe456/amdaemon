@@ -14,6 +14,7 @@ namespace amdaemon::util {
 
 		explicit LaunchChecker(const std::wstring& name);
 
+        bool isFirstLaunch();
 
-	};
+    };
 }
