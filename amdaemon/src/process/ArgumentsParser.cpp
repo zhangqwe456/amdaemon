@@ -26,9 +26,9 @@ namespace {
         if (keyInfo.withParam == params.empty()) {
             return ArgumentsParser::Result::InvalidFormat;
         }
-        auto v1 = dest[keyInfo.name];
-        v1.insert(v1.end(), params.begin(), params.end());
-        if (keyInfo.multiply || v1.size() < 2) {
+        auto v1 = &dest[keyInfo.name];
+        v1->insert(v1->end(), params.begin(), params.end());
+        if (keyInfo.multiply || v1->size() < 2) {
             return ArgumentsParser::Result::Ok;
         }
         return ArgumentsParser::Result::InvalidFormat;
@@ -101,6 +101,38 @@ namespace amdaemon::process {
         if (res) {
             return res;
         }
-        dest.find(L"-w");
+        auto v1 = dest.find(L"-w");
+        if (v1 == dest.end()) {
+            _bEnableConsoleStatus = false;
+        } else {
+            auto str = v1->second[0];
+            std::transform(str.begin(), str.end(), str.begin(), towlower);
+            if (str == L"show") {
+                _bShowConsole = true;
+            } else if (str == L"hide") {
+                _bShowConsole = false;
+            } else {
+                return ArgumentsParser::Result::InvalidFormat;
+            }
+        }
+        _configFilePathes.clear();
+        _logFilePath.clear();
+        _mergedConfigFilePath.clear();
+        _frameRateHigh = false;
+        v1 = dest.find(L"-c");
+        if (v1 != dest.end()) {
+            _configFilePathes = v1->second;
+        }
+        v1 = dest.find(L"-l");
+        if (v1 != dest.end()) {
+            _logFilePath = v1->second[0];
+        }
+        v1 = dest.find(L"-m");
+        if (v1 != dest.end()) {
+            _mergedConfigFilePath = v1->second[0];
+        }
+        v1 = dest.find(L"-f");
+        _frameRateHigh = v1 != dest.end();
+        return 0;
     }
 }
